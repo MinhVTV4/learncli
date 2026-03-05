@@ -31,12 +31,35 @@ export async function getAISuggestions(
     return ['echo "Hello World"', 'echo $USER'];
   }
   if (lowerInput.startsWith('gi')) {
-    return ['git status', 'git add .', 'git commit -m "init"'];
+    return [
+      'git status', 
+      'git add .', 
+      'git commit -m "msg"', 
+      'git log',
+      'git branch',
+      'git checkout main',
+      'git merge feature',
+      'git remote -v',
+      'git push origin main',
+      'git clone https://github.com/example/repo.git'
+    ];
+  }
+  if (lowerInput.startsWith('gr')) {
+    return ['grep "pattern" file.txt', 'grep -r "pattern" .'];
+  }
+  if (lowerInput.startsWith('fi')) {
+    return ['find . -name "*.txt"', 'find . -type f'];
+  }
+  if (lowerInput.startsWith('ch')) {
+    return ['chmod +x script.sh', 'chmod 755 file', 'checkout'];
+  }
+  if (lowerInput.startsWith('su')) {
+    return ['sudo su', 'sudo apt update'];
   }
   if (lowerInput.startsWith('np')) {
     return ['npm install', 'npm run dev', 'npm start'];
   }
 
   // Default fallback suggestions based on common commands
-  return ['ls -la', 'pwd', 'clear'];
+  return ['ls -la', 'pwd', 'clear', 'git status'];
 }

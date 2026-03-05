@@ -173,6 +173,15 @@ export class Shell {
               } else if (subCmd === 'merge') {
                  if (!args[2]) throw new Error("missing argument: must specify branch to merge");
                  output = await gitService.merge(cwd, args[2]);
+              } else if (subCmd === 'remote') {
+                 output = await gitService.remote(cwd, args[2], args[3], args[4]);
+              } else if (subCmd === 'push') {
+                 const remote = args[2] || 'origin';
+                 const branch = args[3] || 'main';
+                 output = await gitService.push(cwd, remote, branch);
+              } else if (subCmd === 'clone') {
+                 if (!args[2]) throw new Error("missing argument: must specify url to clone");
+                 output = await gitService.clone(cwd, args[2]);
               } else {
                 output = `git: '${subCmd}' is not a git command. See 'git --help'.`;
               }

@@ -10,11 +10,12 @@ import {
   Sparkles,
   History,
   Command,
+  Lightbulb,
 } from "lucide-react";
 
 type Suggestion = {
   text: string;
-  source: "history" | "ai" | "command";
+  source: "history" | "ai" | "command" | "hint";
   score?: number;
 };
 
@@ -30,14 +31,27 @@ const AVAILABLE_COMMANDS = [
   "whoami",
   "clear",
   "help",
+  "git",
+  "branch",
+  "checkout",
+  "merge",
+  "remote",
+  "push",
+  "clone",
+  "find",
+  "grep",
+  "chmod",
+  "sudo"
 ];
 
 export function TerminalComponent({ 
   onCommandExecuted,
-  onCommandParsed
+  onCommandParsed,
+  currentTask
 }: { 
   onCommandExecuted?: () => void;
   onCommandParsed?: (cmd: string, vfs: any) => void;
+  currentTask?: { commandHint: string; description: string };
 }) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
@@ -64,6 +78,21 @@ export function TerminalComponent({
       setShowSuggestions(true);
       setSelectedIndex(0);
 
+      const suggestions: Suggestion[] = [];
+
+      // 0. Current Task Hint (Highest Priority)
+      if (currentTask && currentTask.commandHint) {
+        const hint = currentTask.commandHint;
+        // Simple check: if input is a prefix of hint, or hint contains input
+        if (hint.startsWith(currentInput) || hint.includes(currentInput)) {
+           suggestions.push({
+             text: hint,
+             source: "hint",
+             score: 1000 // High score
+           });
+        }
+      }
+
       // 1. Fuzzy match history
       const historyMatches = fuzzysort
         .go(currentInput, history, { limit: 3 })
@@ -82,7 +111,7 @@ export function TerminalComponent({
           score: r.score,
         }));
 
-      let combined = [...historyMatches, ...commandMatches].sort(
+      let combined = [...suggestions, ...historyMatches, ...commandMatches].sort(
         (a, b) => (b.score || 0) - (a.score || 0),
       );
 
@@ -369,6 +398,9 @@ export function TerminalComponent({
                 )}
                 {sug.source === "command" && (
                   <Command size={14} className="text-green-400 shrink-0" />
+                )}
+                {sug.source === "hint" && (
+                  <Lightbulb size={14} className="text-yellow-400 shrink-0" />
                 )}
                 <span className="truncate">{sug.text}</span>
               </li>

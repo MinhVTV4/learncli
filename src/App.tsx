@@ -20,6 +20,9 @@ export default function App() {
   const { lessons, activeLessonId, setActiveLessonId, completedTasks, checkCommand, resetProgress } = useLessons();
   const prevCompletedTasksSize = useRef(completedTasks.size);
 
+  const activeLesson = lessons.find(l => l.id === activeLessonId);
+  const currentTask = activeLesson?.tasks.find(t => !completedTasks.has(t.id));
+
   useEffect(() => {
     if (completedTasks.size > prevCompletedTasksSize.current) {
       confetti({
@@ -180,6 +183,7 @@ export default function App() {
               <TerminalComponent 
                 onCommandExecuted={() => setVfsRefreshTrigger(prev => prev + 1)}
                 onCommandParsed={checkCommand}
+                currentTask={currentTask}
               />
             </div>
             <div className="w-full lg:w-72 h-64 lg:h-full shrink-0">

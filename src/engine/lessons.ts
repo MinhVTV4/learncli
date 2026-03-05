@@ -589,6 +589,159 @@ export const lessons: Lesson[] = [
         }
       }
     ]
+  },
+  {
+    id: 'git-remote',
+    title: 'Git Remote & Collaboration',
+    description: 'Học cách làm việc với kho chứa từ xa (remote repository): clone, push và remote.',
+    tasks: [
+      {
+        id: 'git-clone',
+        description: 'Clone một kho chứa từ xa về máy của bạn.',
+        commandHint: 'git clone https://github.com/example/repo.git',
+        verify: async (vfs, cmd) => cmd.startsWith('git clone')
+      },
+      {
+        id: 'cd-repo',
+        description: 'Di chuyển vào thư mục repo vừa clone.',
+        commandHint: 'cd repo',
+        verify: async (vfs, cmd) => cmd.trim() === 'cd repo'
+      },
+      {
+        id: 'check-remote',
+        description: 'Kiểm tra danh sách remote đã được cấu hình.',
+        commandHint: 'git remote -v',
+        verify: async (vfs, cmd) => cmd.includes('git remote')
+      },
+      {
+        id: 'create-file-remote',
+        description: 'Tạo một tệp mới để chuẩn bị đẩy lên server.',
+        commandHint: 'echo "Hello Remote" > remote.txt',
+        verify: async (vfs, cmd) => {
+           try { return (await vfs.cat('remote.txt')).includes('Hello Remote'); } catch { return false; }
+        }
+      },
+      {
+        id: 'git-add-remote',
+        description: 'Stage tệp vừa tạo.',
+        commandHint: 'git add .',
+        verify: async (vfs, cmd) => cmd.trim() === 'git add .' || cmd.trim() === 'git add remote.txt'
+      },
+      {
+        id: 'git-commit-remote',
+        description: 'Commit thay đổi.',
+        commandHint: 'git commit -m "Add remote file"',
+        verify: async (vfs, cmd) => cmd.includes('git commit')
+      },
+      {
+        id: 'git-push',
+        description: 'Đẩy thay đổi lên nhánh main của remote origin.',
+        commandHint: 'git push origin main',
+        verify: async (vfs, cmd) => cmd.trim() === 'git push origin main'
+      }
+    ]
+  },
+  {
+    id: 'git-conflict',
+    title: 'Giải Quyết Xung Đột (Merge Conflict)',
+    description: 'Thực hành xử lý khi hai nhánh cùng sửa đổi một dòng code (Conflict).',
+    tasks: [
+      {
+        id: 'init-conflict',
+        description: 'Khởi tạo repo mới để bắt đầu bài tập.',
+        commandHint: 'git init',
+        verify: async (vfs, cmd) => cmd.trim() === 'git init'
+      },
+      {
+        id: 'create-base',
+        description: 'Tạo file code.txt với nội dung "Base Content".',
+        commandHint: 'echo "Base Content" > code.txt',
+        verify: async (vfs, cmd) => {
+           try { return (await vfs.cat('code.txt')).includes('Base Content'); } catch { return false; }
+        }
+      },
+      {
+        id: 'commit-base',
+        description: 'Commit phiên bản gốc.',
+        commandHint: 'git add . && git commit -m "Base"',
+        verify: async (vfs, cmd) => cmd.includes('git commit')
+      },
+      {
+        id: 'branch-feature-c',
+        description: 'Tạo nhánh "feature".',
+        commandHint: 'git branch feature',
+        verify: async (vfs, cmd) => cmd.trim() === 'git branch feature'
+      },
+      {
+        id: 'checkout-feature-c',
+        description: 'Chuyển sang nhánh "feature".',
+        commandHint: 'git checkout feature',
+        verify: async (vfs, cmd) => cmd.trim() === 'git checkout feature'
+      },
+      {
+        id: 'modify-feature',
+        description: 'Sửa code.txt thành "Feature Change".',
+        commandHint: 'echo "Feature Change" > code.txt',
+        verify: async (vfs, cmd) => {
+           try { return (await vfs.cat('code.txt')).includes('Feature Change'); } catch { return false; }
+        }
+      },
+      {
+        id: 'commit-feature-c',
+        description: 'Commit thay đổi trên nhánh feature.',
+        commandHint: 'git add . && git commit -m "Feature"',
+        verify: async (vfs, cmd) => cmd.includes('git commit')
+      },
+      {
+        id: 'checkout-main-c',
+        description: 'Quay về nhánh main.',
+        commandHint: 'git checkout main',
+        verify: async (vfs, cmd) => cmd.trim() === 'git checkout main'
+      },
+      {
+        id: 'modify-main',
+        description: 'Sửa code.txt thành "Main Change" (khác với Feature Change -> sẽ gây conflict).',
+        commandHint: 'echo "Main Change" > code.txt',
+        verify: async (vfs, cmd) => {
+           try { return (await vfs.cat('code.txt')).includes('Main Change'); } catch { return false; }
+        }
+      },
+      {
+        id: 'commit-main-c',
+        description: 'Commit thay đổi trên nhánh main.',
+        commandHint: 'git add . && git commit -m "Main"',
+        verify: async (vfs, cmd) => cmd.includes('git commit')
+      },
+      {
+        id: 'merge-conflict',
+        description: 'Thử merge nhánh feature vào main. Bạn sẽ gặp lỗi Conflict.',
+        commandHint: 'git merge feature',
+        verify: async (vfs, cmd) => cmd.trim() === 'git merge feature'
+      },
+      {
+        id: 'view-conflict',
+        description: 'Xem nội dung file bị conflict. Bạn sẽ thấy các dấu <<<<<<<, =======, >>>>>>>.',
+        commandHint: 'cat code.txt',
+        verify: async (vfs, cmd) => cmd.trim() === 'cat code.txt'
+      },
+      {
+        id: 'resolve-conflict',
+        description: 'Sửa file code.txt để giải quyết conflict (giữ lại nội dung bạn muốn, ví dụ "Final Code").',
+        commandHint: 'echo "Final Code" > code.txt',
+        verify: async (vfs, cmd) => {
+           try { 
+             const content = await vfs.cat('code.txt');
+             return !content.includes('<<<<<<<') && !content.includes('=======');
+           } catch { return false; }
+        }
+      },
+      {
+        id: 'commit-resolution',
+        description: 'Stage và Commit file đã sửa để hoàn tất merge.',
+        commandHint: 'git add . && git commit -m "Resolved"',
+        verify: async (vfs, cmd) => cmd.includes('git commit')
+      }
+    ]
   }
 ];
 
