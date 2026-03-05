@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { db } from '../vfs/persistence';
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
@@ -41,7 +42,9 @@ const AVAILABLE_COMMANDS = [
   "find",
   "grep",
   "chmod",
-  "sudo"
+  "sudo",
+  "history",
+  "diff"
 ];
 
 export function TerminalComponent({ 
@@ -64,6 +67,13 @@ export function TerminalComponent({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [history, setHistory] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Load history from DB
+  useEffect(() => {
+    db.table('history').orderBy('timestamp').toArray().then(items => {
+      setHistory(items.map(i => i.command));
+    });
+  }, []);
 
   // Debounced AI suggestions
   const aiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -210,6 +220,13 @@ export function TerminalComponent({
                 term.write(output.replace(/\n/g, "\r\n") + "\r\n");
               }
             }
+            
+            // Save to DB
+            await db.table('history').add({
+              command: cmd,
+              timestamp: Date.now()
+            });
+
             setHistory((prev) => [...prev, cmd]);
             if (onCommandExecuted) onCommandExecuted();
             if (onCommandParsed) onCommandParsed(cmd, shell.vfs);

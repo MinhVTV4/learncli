@@ -10,18 +10,23 @@ export function useLessons() {
     const activeLesson = lessons.find(l => l.id === activeLessonId);
     if (!activeLesson) return;
 
+    const newCompletedIds: string[] = [];
+
     for (const task of activeLesson.tasks) {
       if (!completedTasks.has(task.id)) {
         const isPassed = await task.verify(vfs, cmd);
         if (isPassed) {
-          setCompletedTasks(prev => {
-            const next = new Set(prev);
-            next.add(task.id);
-            return next;
-          });
+          newCompletedIds.push(task.id);
         }
-        break; // Only check the current pending task in sequence
       }
+    }
+
+    if (newCompletedIds.length > 0) {
+      setCompletedTasks(prev => {
+        const next = new Set(prev);
+        newCompletedIds.forEach(id => next.add(id));
+        return next;
+      });
     }
   }, [activeLessonId, completedTasks]);
 

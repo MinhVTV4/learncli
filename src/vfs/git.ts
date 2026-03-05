@@ -181,6 +181,56 @@ export class GitService {
     return output;
   }
 
+  async diff(cwdId: string): Promise<string> {
+    const repo = await this.findRepoRoot(cwdId);
+    if (!repo) throw new Error('fatal: not a git repository');
+
+    const state = await this.getGitState(repo.id);
+    const workFiles = await this.scanWorkspace(repo.id);
+    
+    let output = '';
+
+    // Diff Workspace vs Staging
+    for (const [path, content] of Object.entries(workFiles)) {
+      if (path.startsWith('.git/')) continue;
+
+      const stagedContent = state.staging[path];
+      // If not in staging, check HEAD?
+      // git diff (without args) shows changes not staged.
+      // So we compare Workspace vs Index (Staging).
+      // If file not in Index, it's untracked (git diff doesn't show untracked)
+      // OR it's in HEAD but not Index (modified but not staged).
+      
+      // If file is in Index (Staging)
+      if (stagedContent !== undefined) {
+        if (content !== stagedContent) {
+          output += `diff --git a/${path} b/${path}\n`;
+          output += `--- a/${path}\n`;
+          output += `+++ b/${path}\n`;
+          output += `@@ -1 +1 @@\n`;
+          output += `-\x1b[31m${stagedContent}\x1b[0m\n`;
+          output += `+\x1b[32m${content}\x1b[0m\n`;
+        }
+      } else {
+        // Not in Index. Check HEAD.
+        const headHash = state.branches[state.currentBranch];
+        const headCommit = state.commits[headHash];
+        const headContent = headCommit?.files[path];
+        
+        if (headContent !== undefined && content !== headContent) {
+           output += `diff --git a/${path} b/${path}\n`;
+           output += `--- a/${path}\n`;
+           output += `+++ b/${path}\n`;
+           output += `@@ -1 +1 @@\n`;
+           output += `-\x1b[31m${headContent}\x1b[0m\n`;
+           output += `+\x1b[32m${content}\x1b[0m\n`;
+        }
+      }
+    }
+    
+    return output;
+  }
+
   async add(cwdId: string, filePattern: string): Promise<string> {
     const repo = await this.findRepoRoot(cwdId);
     if (!repo) throw new Error('fatal: not a git repository');

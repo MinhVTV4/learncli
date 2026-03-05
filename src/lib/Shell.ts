@@ -1,5 +1,6 @@
 import { VFSCommands } from "../vfs/commands";
 import { gitService } from "../vfs/git";
+import { parsePipeline } from "./commandParser";
 
 export class Shell {
   vfs: VFSCommands;
@@ -22,38 +23,14 @@ export class Shell {
   async execute(commandLine: string): Promise<string> {
     if (!this.isReady) await this.init();
     
-    // Split by pipe |
-    // Note: This is a simple split and doesn't handle | inside quotes
-    const segments = commandLine.split('|');
+    const pipeline = parsePipeline(commandLine);
     let lastOutput = "";
 
-    for (let i = 0; i < segments.length; i++) {
-      const segment = segments[i].trim();
-      if (!segment) continue;
+    for (let i = 0; i < pipeline.length; i++) {
+      const segment = pipeline[i];
+      const { args, redirectTarget, append } = segment;
       
-      // For the last segment, we might have redirection
-      let cmdLine = segment;
-      let redirectTarget: string | null = null;
-      let append = false;
-
-      // Only parse redirection for the last segment of the pipe
-      if (i === segments.length - 1) {
-        const appendMatch = cmdLine.match(/(.*)>>\s*(\S+)$/);
-        if (appendMatch) {
-          cmdLine = appendMatch[1].trim();
-          redirectTarget = appendMatch[2];
-          append = true;
-        } else {
-          const writeMatch = cmdLine.match(/(.*)>\s*(\S+)$/);
-          if (writeMatch) {
-            cmdLine = writeMatch[1].trim();
-            redirectTarget = writeMatch[2];
-          }
-        }
-      }
-
-      const args = cmdLine.split(/\s+/);
-      if (args.length === 0 || args[0] === "") continue;
+      if (args.length === 0) continue;
 
       const cmd = args[0];
       let output = "";
@@ -66,6 +43,14 @@ export class Shell {
             const lsPath = args.find(a => !a.startsWith('-') && a !== 'ls') || '.';
             const items = await this.vfs.ls(lsPath, lsFlags);
             output = items.join("\n");
+            break;
+          case "history":
+            // We don't have access to the Terminal's history state here directly.
+            // But we can return a special string or throw an error that Terminal handles?
+            // Or better, we can't implement history inside Shell easily without passing history in.
+            // Let's skip history command in Shell and handle it in Terminal?
+            // Or just return "History is managed by the terminal UI".
+            output = "History is available by pressing Up/Down arrows.";
             break;
           case "cd":
             await this.vfs.cd(args[1] || this.env.HOME);
@@ -98,16 +83,15 @@ export class Shell {
             output = await this.vfs.cat(args[1]);
             break;
           case "echo":
-            let echoStr = args.slice(1).join(" ");
-            if ((echoStr.startsWith('"') && echoStr.endsWith('"')) || (echoStr.startsWith("'") && echoStr.endsWith("'"))) {
-              echoStr = echoStr.slice(1, -1);
-            }
-            output = echoStr;
+            // args[0] is 'echo', rest are arguments
+            // The tokenizer already stripped quotes, so we just join them with space
+            output = args.slice(1).join(" ");
             break;
           case "grep":
             if (!args[1]) throw new Error("missing pattern");
             const pattern = args[1];
             const file = args[2];
+            // If file is provided, grep file. If not, grep stdin (lastOutput)
             output = await this.vfs.grep(pattern, file, lastOutput);
             break;
           case "find":
@@ -134,6 +118,13 @@ export class Shell {
              if (!args[1]) {
                output = "usage: sudo command...";
              } else {
+               // Reconstruct command line for sub-execution? 
+               // Or just execute the rest of args?
+               // The execute method expects a string.
+               // We can reconstruct it from args.
+               // But we lost the original quoting. 
+               // Ideally execute should take args array too, but let's just join for now.
+               // This is a limitation of fake sudo.
                const subCmd = args.slice(1).join(" ");
                output = await this.execute(subCmd);
              }
@@ -154,13 +145,13 @@ export class Shell {
               } else if (subCmd === 'commit') {
                 const msgIndex = args.indexOf('-m');
                 if (msgIndex === -1 || !args[msgIndex + 1]) throw new Error("commit message required (-m)");
-                let msg = args.slice(msgIndex + 1).join(" ");
-                if ((msg.startsWith('"') && msg.endsWith('"')) || (msg.startsWith("'") && msg.endsWith("'"))) {
-                  msg = msg.slice(1, -1);
-                }
+                // The tokenizer already handled quotes, so args[msgIndex + 1] is the full message
+                const msg = args[msgIndex + 1];
                 output = await gitService.commit(cwd, msg);
               } else if (subCmd === 'log') {
                 output = await gitService.log(cwd);
+              } else if (subCmd === 'diff') {
+                output = await gitService.diff(cwd);
               } else if (subCmd === 'branch') {
                  if (args[2]) {
                    output = await gitService.createBranch(cwd, args[2]);
@@ -194,13 +185,16 @@ export class Shell {
             throw new Error(`command not found: ${cmd}`);
         }
 
-        // If this is the last segment and has redirection, write to file
-        if (i === segments.length - 1 && redirectTarget) {
+        // Handle redirection
+        if (redirectTarget) {
           if (append) {
             await this.vfs.appendFile(redirectTarget, output + "\n");
           } else {
             await this.vfs.writeFile(redirectTarget, output + "\n");
           }
+          // If redirected, we don't pass output to next pipe segment (usually)
+          // But in this simple shell, lastOutput is what's returned or passed.
+          // If we redirected, stdout is empty.
           lastOutput = "";
         } else {
           lastOutput = output;

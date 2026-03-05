@@ -1,4 +1,5 @@
 import { Lesson } from './types';
+import { gitService } from '../vfs/git';
 
 export const lessons: Lesson[] = [
   {
@@ -66,7 +67,7 @@ export const lessons: Lesson[] = [
         id: 'cat-1',
         description: 'Đọc và in nội dung của tệp notes.txt ra màn hình để kiểm tra.',
         commandHint: 'cat notes.txt',
-        verify: async (vfs, cmd) => cmd.trim().startsWith('cat notes.txt')
+        verify: async (vfs, cmd) => cmd.trim().startsWith('cat') && cmd.includes('notes.txt')
       },
       {
         id: 'rm-1',
@@ -142,7 +143,7 @@ export const lessons: Lesson[] = [
         id: 'cat-config',
         description: 'Kiểm tra lại nội dung của tệp config.txt.',
         commandHint: 'cat config.txt',
-        verify: async (vfs, cmd) => cmd.trim().startsWith('cat config.txt')
+        verify: async (vfs, cmd) => cmd.trim().startsWith('cat') && cmd.includes('config.txt')
       },
       {
         id: 'cp-config',
@@ -181,7 +182,7 @@ export const lessons: Lesson[] = [
         id: 'ls-config',
         description: 'Liệt kê nội dung bên trong thư mục project_config để kiểm tra.',
         commandHint: 'ls project_config',
-        verify: async (vfs, cmd) => cmd.trim() === 'ls project_config' || cmd.trim() === 'ls project_config/'
+        verify: async (vfs, cmd) => cmd.trim().startsWith('ls') && cmd.includes('project_config')
       },
       {
         id: 'rm-backup',
@@ -362,7 +363,7 @@ export const lessons: Lesson[] = [
         id: 'grep-error',
         description: 'Sử dụng grep để chỉ hiển thị các dòng chứa chữ "Error" trong tệp logs/app.log.',
         commandHint: 'grep Error logs/app.log',
-        verify: async (vfs, cmd) => cmd.trim().startsWith('grep Error')
+        verify: async (vfs, cmd) => cmd.trim().startsWith('grep') && cmd.includes('Error')
       },
       {
         id: 'find-log',
@@ -374,7 +375,7 @@ export const lessons: Lesson[] = [
         id: 'pipe-grep',
         description: 'Sử dụng pipe (|) để đọc tệp logs/app.log bằng cat và lọc lấy dòng chứa "Info".',
         commandHint: 'cat logs/app.log | grep Info',
-        verify: async (vfs, cmd) => cmd.includes('|') && cmd.includes('grep Info')
+        verify: async (vfs, cmd) => cmd.includes('|') && cmd.includes('grep')
       }
     ]
   },
@@ -410,24 +411,13 @@ export const lessons: Lesson[] = [
         id: 'chmod-x',
         description: 'Cấp quyền thực thi (execute) cho tệp deploy.sh bằng lệnh chmod +x.',
         commandHint: 'chmod +x deploy.sh',
-        verify: async (vfs, cmd) => {
-          try {
-            // We can't easily check the internal permission string from here without exposing it in ls -l output parsing or vfs method
-            // But we can check if the command was run.
-            // Better: check if ls -l output contains x?
-            // Let's just trust the command for now, or check vfs node if we could access it directly.
-            // Since verify has access to vfs (VFSCommands), we can't directly access vfsCore.
-            // But we can use ls -l and parse it?
-            // Let's just check the command string for simplicity in this learning app context.
-            return cmd.trim() === 'chmod +x deploy.sh';
-          } catch { return false; }
-        }
+        verify: async (vfs, cmd) => cmd.trim().startsWith('chmod') && cmd.includes('+x')
       },
       {
         id: 'chmod-777',
         description: 'Thử thay đổi quyền hạn thành rwxrwxrwx (777) cho deploy.sh (không khuyến khích trong thực tế!).',
         commandHint: 'chmod 777 deploy.sh',
-        verify: async (vfs, cmd) => cmd.trim() === 'chmod 777 deploy.sh'
+        verify: async (vfs, cmd) => cmd.trim().startsWith('chmod') && cmd.includes('777')
       },
       {
         id: 'sudo-fake',
@@ -446,7 +436,12 @@ export const lessons: Lesson[] = [
         id: 'git-init',
         description: 'Khởi tạo một kho chứa Git (repository) mới trong thư mục hiện tại.',
         commandHint: 'git init',
-        verify: async (vfs, cmd) => cmd.trim() === 'git init'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            return !!repo;
+          } catch { return false; }
+        }
       },
       {
         id: 'git-status-1',
@@ -475,7 +470,14 @@ export const lessons: Lesson[] = [
         id: 'git-add',
         description: 'Đưa tệp README.md vào khu vực chờ (Staging Area).',
         commandHint: 'git add README.md',
-        verify: async (vfs, cmd) => cmd.trim() === 'git add README.md' || cmd.trim() === 'git add .'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            return !!state.staging['README.md'];
+          } catch { return false; }
+        }
       },
       {
         id: 'git-status-3',
@@ -487,7 +489,16 @@ export const lessons: Lesson[] = [
         id: 'git-commit',
         description: 'Lưu lại thay đổi (commit) với thông điệp "Initial commit".',
         commandHint: 'git commit -m "Initial commit"',
-        verify: async (vfs, cmd) => cmd.includes('git commit') && cmd.includes('-m')
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            const headHash = state.branches[state.currentBranch];
+            const commit = state.commits[headHash];
+            return commit && commit.message.includes('Initial commit');
+          } catch { return false; }
+        }
       },
       {
         id: 'git-log',
@@ -506,7 +517,12 @@ export const lessons: Lesson[] = [
         id: 'git-init-adv',
         description: 'Bắt đầu bằng cách khởi tạo một kho chứa Git mới.',
         commandHint: 'git init',
-        verify: async (vfs, cmd) => cmd.trim() === 'git init'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            return !!repo;
+          } catch { return false; }
+        }
       },
       {
         id: 'create-main-file',
@@ -520,25 +536,55 @@ export const lessons: Lesson[] = [
         id: 'git-add-adv',
         description: 'Đưa tệp main.txt vào Staging Area.',
         commandHint: 'git add main.txt',
-        verify: async (vfs, cmd) => cmd.trim() === 'git add main.txt' || cmd.trim() === 'git add .'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            return !!state.staging['main.txt'];
+          } catch { return false; }
+        }
       },
       {
         id: 'git-commit-adv',
         description: 'Commit phiên bản đầu tiên.',
         commandHint: 'git commit -m "v1"',
-        verify: async (vfs, cmd) => cmd.includes('git commit')
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            const headHash = state.branches[state.currentBranch];
+            const commit = state.commits[headHash];
+            return commit && commit.message === 'v1';
+          } catch { return false; }
+        }
       },
       {
         id: 'git-branch',
         description: 'Tạo một nhánh mới tên là "feature".',
         commandHint: 'git branch feature',
-        verify: async (vfs, cmd) => cmd.trim() === 'git branch feature'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            return !!state.branches['feature'];
+          } catch { return false; }
+        }
       },
       {
         id: 'git-checkout',
         description: 'Chuyển sang nhánh "feature" để làm việc.',
         commandHint: 'git checkout feature',
-        verify: async (vfs, cmd) => cmd.trim() === 'git checkout feature'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            return state.currentBranch === 'feature';
+          } catch { return false; }
+        }
       },
       {
         id: 'update-feature',
@@ -552,19 +598,42 @@ export const lessons: Lesson[] = [
         id: 'git-add-feature',
         description: 'Stage thay đổi trên nhánh feature.',
         commandHint: 'git add .',
-        verify: async (vfs, cmd) => cmd.trim() === 'git add .' || cmd.trim() === 'git add main.txt'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            return !!state.staging['main.txt'];
+          } catch { return false; }
+        }
       },
       {
         id: 'git-commit-feature',
         description: 'Commit thay đổi trên nhánh feature.',
         commandHint: 'git commit -m "v2"',
-        verify: async (vfs, cmd) => cmd.includes('git commit')
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            const headHash = state.branches[state.currentBranch];
+            const commit = state.commits[headHash];
+            return commit && commit.message === 'v2';
+          } catch { return false; }
+        }
       },
       {
         id: 'checkout-main',
         description: 'Quay trở lại nhánh "main".',
         commandHint: 'git checkout main',
-        verify: async (vfs, cmd) => cmd.trim() === 'git checkout main'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            return state.currentBranch === 'main';
+          } catch { return false; }
+        }
       },
       {
         id: 'verify-old-content',
@@ -578,7 +647,17 @@ export const lessons: Lesson[] = [
         id: 'git-merge',
         description: 'Hợp nhất nhánh "feature" vào nhánh "main".',
         commandHint: 'git merge feature',
-        verify: async (vfs, cmd) => cmd.trim() === 'git merge feature'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            const mainHash = state.branches['main'];
+            const featureHash = state.branches['feature'];
+            // After fast-forward merge, hashes should be same
+            return mainHash === featureHash;
+          } catch { return false; }
+        }
       },
       {
         id: 'verify-merge',
@@ -625,13 +704,29 @@ export const lessons: Lesson[] = [
         id: 'git-add-remote',
         description: 'Stage tệp vừa tạo.',
         commandHint: 'git add .',
-        verify: async (vfs, cmd) => cmd.trim() === 'git add .' || cmd.trim() === 'git add remote.txt'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            return !!state.staging['remote.txt'];
+          } catch { return false; }
+        }
       },
       {
         id: 'git-commit-remote',
         description: 'Commit thay đổi.',
         commandHint: 'git commit -m "Add remote file"',
-        verify: async (vfs, cmd) => cmd.includes('git commit')
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            const headHash = state.branches[state.currentBranch];
+            const commit = state.commits[headHash];
+            return commit && commit.message.includes('Add remote file');
+          } catch { return false; }
+        }
       },
       {
         id: 'git-push',
@@ -650,7 +745,12 @@ export const lessons: Lesson[] = [
         id: 'init-conflict',
         description: 'Khởi tạo repo mới để bắt đầu bài tập.',
         commandHint: 'git init',
-        verify: async (vfs, cmd) => cmd.trim() === 'git init'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            return !!repo;
+          } catch { return false; }
+        }
       },
       {
         id: 'create-base',
@@ -664,19 +764,42 @@ export const lessons: Lesson[] = [
         id: 'commit-base',
         description: 'Commit phiên bản gốc.',
         commandHint: 'git add . && git commit -m "Base"',
-        verify: async (vfs, cmd) => cmd.includes('git commit')
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            const headHash = state.branches[state.currentBranch];
+            const commit = state.commits[headHash];
+            return commit && commit.message === 'Base';
+          } catch { return false; }
+        }
       },
       {
         id: 'branch-feature-c',
         description: 'Tạo nhánh "feature".',
         commandHint: 'git branch feature',
-        verify: async (vfs, cmd) => cmd.trim() === 'git branch feature'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            return !!state.branches['feature'];
+          } catch { return false; }
+        }
       },
       {
         id: 'checkout-feature-c',
         description: 'Chuyển sang nhánh "feature".',
         commandHint: 'git checkout feature',
-        verify: async (vfs, cmd) => cmd.trim() === 'git checkout feature'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            return state.currentBranch === 'feature';
+          } catch { return false; }
+        }
       },
       {
         id: 'modify-feature',
@@ -690,13 +813,29 @@ export const lessons: Lesson[] = [
         id: 'commit-feature-c',
         description: 'Commit thay đổi trên nhánh feature.',
         commandHint: 'git add . && git commit -m "Feature"',
-        verify: async (vfs, cmd) => cmd.includes('git commit')
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            const headHash = state.branches[state.currentBranch];
+            const commit = state.commits[headHash];
+            return commit && commit.message === 'Feature';
+          } catch { return false; }
+        }
       },
       {
         id: 'checkout-main-c',
         description: 'Quay về nhánh main.',
         commandHint: 'git checkout main',
-        verify: async (vfs, cmd) => cmd.trim() === 'git checkout main'
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            return state.currentBranch === 'main';
+          } catch { return false; }
+        }
       },
       {
         id: 'modify-main',
@@ -710,7 +849,16 @@ export const lessons: Lesson[] = [
         id: 'commit-main-c',
         description: 'Commit thay đổi trên nhánh main.',
         commandHint: 'git add . && git commit -m "Main"',
-        verify: async (vfs, cmd) => cmd.includes('git commit')
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            const headHash = state.branches[state.currentBranch];
+            const commit = state.commits[headHash];
+            return commit && commit.message === 'Main';
+          } catch { return false; }
+        }
       },
       {
         id: 'merge-conflict',
@@ -739,9 +887,17 @@ export const lessons: Lesson[] = [
         id: 'commit-resolution',
         description: 'Stage và Commit file đã sửa để hoàn tất merge.',
         commandHint: 'git add . && git commit -m "Resolved"',
-        verify: async (vfs, cmd) => cmd.includes('git commit')
+        verify: async (vfs, cmd) => {
+          try {
+            const repo = await gitService.findRepoRoot(vfs.cwdId);
+            if (!repo) return false;
+            const state = await gitService.getGitState(repo.id);
+            const headHash = state.branches[state.currentBranch];
+            const commit = state.commits[headHash];
+            return commit && commit.message === 'Resolved';
+          } catch { return false; }
+        }
       }
     ]
   }
 ];
-

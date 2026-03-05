@@ -8,6 +8,7 @@ export class VFSDatabase extends Dexie {
     super('cli-vfs-db');
     this.version(1).stores({
       nodes: 'id, parentId, [parentId+name], type',
+      history: '++id, command, timestamp',
     });
   }
 }
