@@ -899,5 +899,216 @@ export const lessons: Lesson[] = [
         }
       }
     ]
+  },
+  {
+    id: 'npm-basics',
+    title: 'Node.js & NPM Cơ Bản',
+    description: 'Làm quen với môi trường Node.js và trình quản lý gói NPM: init, install, run script.',
+    tasks: [
+      {
+        id: 'node-version',
+        description: 'Kiểm tra phiên bản Node.js đã cài đặt.',
+        commandHint: 'node -v',
+        verify: async (vfs, cmd) => cmd.trim() === 'node -v' || cmd.trim() === 'node --version'
+      },
+      {
+        id: 'npm-version',
+        description: 'Kiểm tra phiên bản NPM.',
+        commandHint: 'npm -v',
+        verify: async (vfs, cmd) => cmd.trim() === 'npm -v' || cmd.trim() === 'npm --version'
+      },
+      {
+        id: 'init-project',
+        description: 'Tạo thư mục dự án mới "my-node-app" và khởi tạo package.json.',
+        commandHint: 'mkdir my-node-app && cd my-node-app && npm init -y',
+        verify: async (vfs, cmd) => {
+          try {
+            const pwd = await vfs.pwd();
+            if (!pwd.endsWith('/my-node-app')) return false;
+            const items = await vfs.ls('.');
+            return items.includes('package.json');
+          } catch { return false; }
+        }
+      },
+      {
+        id: 'check-package-json',
+        description: 'Xem nội dung tệp package.json vừa tạo.',
+        commandHint: 'cat package.json',
+        verify: async (vfs, cmd) => cmd.trim().startsWith('cat') && cmd.includes('package.json')
+      },
+      {
+        id: 'install-dep',
+        description: 'Cài đặt thư viện "express" làm dependency chính.',
+        commandHint: 'npm install express',
+        verify: async (vfs, cmd) => {
+          try {
+            const content = await vfs.cat('package.json');
+            const pkg = JSON.parse(content);
+            return pkg.dependencies && pkg.dependencies['express'];
+          } catch { return false; }
+        }
+      },
+      {
+        id: 'check-node-modules',
+        description: 'Kiểm tra thư mục node_modules để thấy express đã được tải về.',
+        commandHint: 'ls node_modules',
+        verify: async (vfs, cmd) => {
+          try {
+            const items = await vfs.ls('node_modules');
+            return items.includes('express');
+          } catch { return false; }
+        }
+      },
+      {
+        id: 'install-dev-dep',
+        description: 'Cài đặt "jest" làm devDependency (công cụ hỗ trợ phát triển).',
+        commandHint: 'npm install jest --save-dev',
+        verify: async (vfs, cmd) => {
+          try {
+            const content = await vfs.cat('package.json');
+            const pkg = JSON.parse(content);
+            return pkg.devDependencies && pkg.devDependencies['jest'];
+          } catch { return false; }
+        }
+      },
+      {
+        id: 'run-test',
+        description: 'Chạy script "test" mặc định trong package.json.',
+        commandHint: 'npm test',
+        verify: async (vfs, cmd) => cmd.trim() === 'npm test' || cmd.trim() === 'npm run test'
+      },
+      {
+        id: 'create-index',
+        description: 'Tạo tệp index.js với nội dung in ra màn hình.',
+        commandHint: 'echo "console.log(\'Hello Node.js\')" > index.js',
+        verify: async (vfs, cmd) => {
+          try {
+            const content = await vfs.cat('index.js');
+            return content.includes('console.log');
+          } catch { return false; }
+        }
+      },
+      {
+        id: 'run-node',
+        description: 'Chạy tệp index.js bằng Node.js.',
+        commandHint: 'node index.js',
+        verify: async (vfs, cmd) => cmd.trim().startsWith('node') && cmd.includes('index.js')
+      }
+    ]
+  },
+  {
+    id: 'nano-editor',
+    title: 'Trình Soạn Thảo Nano',
+    description: 'Học cách chỉnh sửa văn bản trực tiếp trong terminal bằng trình soạn thảo Nano.',
+    tasks: [
+      {
+        id: 'nano-open',
+        description: 'Mở trình soạn thảo nano để tạo tệp "story.txt".',
+        commandHint: 'nano story.txt',
+        verify: async (vfs, cmd) => cmd.trim().startsWith('nano') && cmd.includes('story.txt')
+      },
+      {
+        id: 'nano-content',
+        description: 'Viết dòng chữ "Once upon a time" vào file và lưu lại (Ctrl+O). Sau đó thoát (Ctrl+X).',
+        commandHint: '(Thực hiện trong editor)',
+        verify: async (vfs, cmd) => {
+          try {
+            const content = await vfs.cat('story.txt');
+            return content.includes('Once upon a time');
+          } catch { return false; }
+        }
+      },
+      {
+        id: 'cat-story',
+        description: 'Kiểm tra lại nội dung tệp story.txt vừa tạo.',
+        commandHint: 'cat story.txt',
+        verify: async (vfs, cmd) => cmd.trim().startsWith('cat') && cmd.includes('story.txt')
+      },
+      {
+        id: 'nano-edit',
+        description: 'Mở lại file story.txt bằng nano để chỉnh sửa.',
+        commandHint: 'nano story.txt',
+        verify: async (vfs, cmd) => cmd.trim().startsWith('nano') && cmd.includes('story.txt')
+      },
+      {
+        id: 'nano-append',
+        description: 'Thêm dòng "The End." vào cuối file, lưu và thoát.',
+        commandHint: '(Thực hiện trong editor)',
+        verify: async (vfs, cmd) => {
+          try {
+            const content = await vfs.cat('story.txt');
+            return content.includes('Once upon a time') && content.includes('The End');
+          } catch { return false; }
+        }
+      }
+    ]
+  },
+  {
+    id: 'network-api',
+    title: 'Mạng & API (cURL)',
+    description: 'Học cách tương tác với các API và dịch vụ mạng bằng lệnh curl.',
+    tasks: [
+      {
+        id: 'curl-get',
+        description: 'Gửi một yêu cầu GET đơn giản đến https://api.hintshell.com/users để lấy danh sách người dùng.',
+        commandHint: 'curl https://api.hintshell.com/users',
+        verify: async (vfs, cmd) => cmd.includes('curl') && cmd.includes('/users')
+      },
+      {
+        id: 'curl-post',
+        description: 'Tạo một người dùng mới bằng phương thức POST. Sử dụng flag -d để gửi dữ liệu JSON.',
+        commandHint: 'curl -X POST -d \'{"name": "Dave"}\' https://api.hintshell.com/users',
+        verify: async (vfs, cmd) => cmd.includes('curl') && cmd.includes('POST') && cmd.includes('-d')
+      },
+      {
+        id: 'curl-head',
+        description: 'Chỉ kiểm tra headers của phản hồi từ google.com (sử dụng flag -I).',
+        commandHint: 'curl -I https://google.com',
+        verify: async (vfs, cmd) => cmd.includes('curl') && (cmd.includes('-I') || cmd.includes('--head'))
+      },
+      {
+        id: 'curl-save',
+        description: 'Lưu kết quả từ API vào một file tên là users.json.',
+        commandHint: 'curl https://api.hintshell.com/users > users.json',
+        verify: async (vfs, cmd) => cmd.includes('curl') && cmd.includes('>') && cmd.includes('users.json')
+      }
+    ]
+  },
+  {
+    id: 'docker-basics',
+    title: 'Docker (Containerization)',
+    description: 'Làm quen với Docker, công nghệ container phổ biến nhất hiện nay.',
+    tasks: [
+      {
+        id: 'docker-run-hello',
+        description: 'Chạy container đầu tiên của bạn với image "hello-world". Docker sẽ tự động tải image về nếu chưa có.',
+        commandHint: 'docker run hello-world',
+        verify: async (vfs, cmd) => cmd.includes('docker') && cmd.includes('run') && cmd.includes('hello-world')
+      },
+      {
+        id: 'docker-images',
+        description: 'Kiểm tra danh sách các image đã được tải về máy.',
+        commandHint: 'docker images',
+        verify: async (vfs, cmd) => cmd.trim() === 'docker images'
+      },
+      {
+        id: 'docker-run-detached',
+        description: 'Chạy một container Nginx ở chế độ nền (detached mode) với flag -d.',
+        commandHint: 'docker run -d nginx',
+        verify: async (vfs, cmd) => cmd.includes('docker') && cmd.includes('run') && cmd.includes('-d') && cmd.includes('nginx')
+      },
+      {
+        id: 'docker-ps',
+        description: 'Xem danh sách các container đang chạy.',
+        commandHint: 'docker ps',
+        verify: async (vfs, cmd) => cmd.trim() === 'docker ps'
+      },
+      {
+        id: 'docker-stop',
+        description: 'Dừng container Nginx đang chạy. (Sử dụng ID hoặc tên container từ lệnh docker ps)',
+        commandHint: 'docker stop <container_id>',
+        verify: async (vfs, cmd) => cmd.includes('docker') && cmd.includes('stop')
+      }
+    ]
   }
 ];

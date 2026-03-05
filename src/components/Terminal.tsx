@@ -2,10 +2,15 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { db } from '../vfs/persistence';
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
+import { WebLinksAddon } from "@xterm/addon-web-links";
+import { SearchAddon } from "@xterm/addon-search";
+import { Unicode11Addon } from "@xterm/addon-unicode11";
+import { WebglAddon } from "@xterm/addon-webgl";
 import "@xterm/xterm/css/xterm.css";
 import { Shell } from "../lib/Shell";
 import { getAISuggestions } from "../lib/ai";
 import fuzzysort from "fuzzysort";
+import { NanoEditor } from "./NanoEditor";
 import {
   Terminal as TerminalIcon,
   Sparkles,
@@ -44,7 +49,12 @@ const AVAILABLE_COMMANDS = [
   "chmod",
   "sudo",
   "history",
-  "diff"
+  "diff",
+  "nano",
+  "npm",
+  "node",
+  "curl",
+  "docker"
 ];
 
 export function TerminalComponent({ 
@@ -66,7 +76,17 @@ export function TerminalComponent({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  // Nano Editor State
+  const [isNanoOpen, setIsNanoOpen] = useState(false);
+  const [nanoFile, setNanoFile] = useState("");
+  const [nanoContent, setNanoContent] = useState("");
+  
+  // Advanced Line Editing Refs
+  const currentLineRef = useRef("");
+  const cursorIndexRef = useRef(0); // Position within the current line
 
   // Load history from DB
   useEffect(() => {
@@ -175,10 +195,32 @@ export function TerminalComponent({
         },
         fontFamily: '"JetBrains Mono", monospace',
         fontSize: 14,
+        allowProposedApi: true,
       });
 
+      // Initialize Addons
       const fitAddon = new FitAddon();
+      const webLinksAddon = new WebLinksAddon();
+      const searchAddon = new SearchAddon();
+      const unicode11Addon = new Unicode11Addon();
+      
       term.loadAddon(fitAddon);
+      term.loadAddon(webLinksAddon);
+      term.loadAddon(searchAddon);
+      term.loadAddon(unicode11Addon);
+      
+      // WebGL might fail in some environments, wrap in try-catch
+      try {
+        const webglAddon = new WebglAddon();
+        webglAddon.onContextLoss(e => {
+          webglAddon.dispose();
+        });
+        term.loadAddon(webglAddon);
+      } catch (e) {
+        console.warn("WebGL addon failed to load, falling back to canvas renderer", e);
+      }
+
+      term.unicode.activeVersion = '11';
 
       // Intercept keys when suggestions are shown
       term.attachCustomKeyEventHandler((e) => {
@@ -212,7 +254,36 @@ export function TerminalComponent({
           term.write("\r\n");
           const cmd = currentLineRef.current.trim();
           if (cmd) {
-            if (cmd === "clear") {
+            // Check for Nano command
+            if (cmd.startsWith("nano")) {
+              const args = cmd.split(/\s+/);
+              const filename = args[1];
+              if (filename) {
+                let content = "";
+                try {
+                  content = await shell.vfs.cat(filename);
+                } catch (e) {
+                  // File doesn't exist, start empty
+                }
+                setNanoFile(filename);
+                setNanoContent(content);
+                setIsNanoOpen(true);
+                
+                // Add to history manually since we bypass shell.execute
+                await db.table('history').add({
+                  command: cmd,
+                  timestamp: Date.now()
+                });
+                setHistory((prev) => [...prev, cmd]);
+                
+                currentLineRef.current = "";
+                setInput("");
+                setShowSuggestions(false);
+                return;
+              } else {
+                 term.write("Usage: nano <filename>\r\n");
+              }
+            } else if (cmd === "clear") {
               term.clear();
             } else {
               const output = await shell.execute(cmd);
@@ -221,13 +292,15 @@ export function TerminalComponent({
               }
             }
             
-            // Save to DB
-            await db.table('history').add({
-              command: cmd,
-              timestamp: Date.now()
-            });
+            // Save to DB (if not nano, which handled it above)
+            if (!cmd.startsWith("nano")) {
+              await db.table('history').add({
+                command: cmd,
+                timestamp: Date.now()
+              });
+              setHistory((prev) => [...prev, cmd]);
+            }
 
-            setHistory((prev) => [...prev, cmd]);
             if (onCommandExecuted) onCommandExecuted();
             if (onCommandParsed) onCommandParsed(cmd, shell.vfs);
           }
@@ -298,7 +371,10 @@ export function TerminalComponent({
     return () => {
       cleanup.then(fn => fn && fn());
     };
-  }, []);
+  }, []); // Re-init if history changes? No, history is ref-accessed or state-accessed. 
+
+  const historyRef = useRef(history);
+  useEffect(() => { historyRef.current = history; }, [history]);
 
   // Update cursor position
   useEffect(() => {
@@ -380,7 +456,27 @@ export function TerminalComponent({
 
       <div ref={terminalRef} className="w-full h-[calc(100%-40px)] p-4" />
 
-      {showSuggestions && suggestions.length > 0 && (
+      {isNanoOpen && (
+        <div className="absolute top-[40px] left-0 right-0 bottom-0 z-40">
+          <NanoEditor 
+            filename={nanoFile}
+            initialContent={nanoContent}
+            onSave={async (content) => {
+              await shellRef.current.vfs.writeFile(nanoFile, content);
+              if (onCommandExecuted) onCommandExecuted(); // Refresh file explorer
+            }}
+            onExit={() => {
+              setIsNanoOpen(false);
+              xtermRef.current?.focus();
+              shellRef.current.getPrompt().then(p => {
+                xtermRef.current?.write(p);
+              });
+            }}
+          />
+        </div>
+      )}
+
+      {showSuggestions && suggestions.length > 0 && !isNanoOpen && (
         <div
           id="hintshell-suggestions"
           className="absolute z-50 bg-[#252526] border border-[#454545] rounded-md shadow-xl overflow-hidden min-w-[300px]"
