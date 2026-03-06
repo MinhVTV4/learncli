@@ -22,6 +22,29 @@ export function NanoEditor({ filename, initialContent, onSave, onExit }: NanoEdi
     }
   }, []);
 
+  const handleSave = async () => {
+    try {
+      await onSave(content);
+      const lines = content.split('\n').length;
+      setMessage(`[ Wrote ${lines} lines ]`);
+      setIsModified(false);
+      setShowExitPrompt(false);
+      // Clear message after 2s
+      setTimeout(() => setMessage(""), 2000);
+    } catch (err: any) {
+      setMessage(`[ Error writing file: ${err.message || err} ]`);
+    }
+  };
+
+  const handleExit = () => {
+    if (isModified && !showExitPrompt) {
+      setShowExitPrompt(true);
+      setMessage("Save modified buffer?  (Answering \"No\" will DESTROY changes) ");
+      return;
+    }
+    onExit();
+  };
+
   const handleSaveAction = async () => {
     await handleSave();
   };
