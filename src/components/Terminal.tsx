@@ -11,6 +11,8 @@ import { Shell } from "../lib/Shell";
 import { getAISuggestions } from "../lib/ai";
 import fuzzysort from "fuzzysort";
 import { NanoEditor } from "./NanoEditor";
+import { TopMonitor } from "./TopMonitor";
+import { COMMAND_SUGGESTIONS } from "../lib/CommandSuggestions";
 import {
   Terminal as TerminalIcon,
   Sparkles,
@@ -54,7 +56,10 @@ const AVAILABLE_COMMANDS = [
   "npm",
   "node",
   "curl",
-  "docker"
+  "docker",
+  "ps",
+  "kill",
+  "top"
 ];
 
 export function TerminalComponent({ 
@@ -83,6 +88,7 @@ export function TerminalComponent({
   const [isNanoOpen, setIsNanoOpen] = useState(false);
   const [nanoFile, setNanoFile] = useState("");
   const [nanoContent, setNanoContent] = useState("");
+  const [isTopOpen, setIsTopOpen] = useState(false);
   
   // Advanced Line Editing Refs
   const currentLineRef = useRef("");
@@ -141,7 +147,27 @@ export function TerminalComponent({
           score: r.score,
         }));
 
-      let combined = [...suggestions, ...historyMatches, ...commandMatches].sort(
+      // 2.5. Context-aware suggestions (flags/subcommands)
+      const parts = currentInput.trim().split(/\s+/);
+      const cmd = parts[0];
+      const lastPart = currentInput.endsWith(" ") ? "" : parts[parts.length - 1];
+      
+      let contextMatches: Suggestion[] = [];
+      
+      if (parts.length > 1 || currentInput.endsWith(" ")) {
+        // We are typing arguments
+        if (COMMAND_SUGGESTIONS[cmd]) {
+           contextMatches = COMMAND_SUGGESTIONS[cmd]
+             .filter(s => s.startsWith(lastPart))
+             .map(s => ({
+               text: s,
+               source: "command" as const,
+               score: 500 // Higher than generic fuzzy match but lower than exact hint
+             }));
+        }
+      }
+
+      let combined = [...suggestions, ...contextMatches, ...historyMatches, ...commandMatches].sort(
         (a, b) => (b.score || 0) - (a.score || 0),
       );
 
@@ -287,6 +313,13 @@ export function TerminalComponent({
               term.clear();
             } else {
               const output = await shell.execute(cmd);
+              if (output === "__TOP_MODE__") {
+                setIsTopOpen(true);
+                currentLineRef.current = "";
+                setInput("");
+                setShowSuggestions(false);
+                return;
+              }
               if (output) {
                 term.write(output.replace(/\n/g, "\r\n") + "\r\n");
               }
@@ -450,7 +483,7 @@ export function TerminalComponent({
         </div>
         <div className="mx-auto flex items-center text-xs text-gray-400 font-mono">
           <TerminalIcon size={14} className="mr-2" />
-          user@learn-cli:~
+          HintShell
         </div>
       </div>
 
@@ -470,6 +503,20 @@ export function TerminalComponent({
               xtermRef.current?.focus();
               shellRef.current.getPrompt().then(p => {
                 xtermRef.current?.write(p);
+              });
+            }}
+          />
+        </div>
+      )}
+
+      {isTopOpen && (
+        <div className="absolute top-[40px] left-0 right-0 bottom-0 z-40">
+          <TopMonitor 
+            onExit={() => {
+              setIsTopOpen(false);
+              xtermRef.current?.focus();
+              shellRef.current.getPrompt().then(p => {
+                xtermRef.current?.write("\r\n" + p);
               });
             }}
           />

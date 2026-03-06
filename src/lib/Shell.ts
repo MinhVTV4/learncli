@@ -4,6 +4,7 @@ import { parsePipeline } from "./commandParser";
 import { NPMService } from "../services/npm";
 import { network } from "./Network";
 import { DockerEngine } from "./Docker";
+import { processManager } from "./ProcessManager";
 
 export class Shell {
   vfs: VFSCommands;
@@ -30,8 +31,19 @@ export class Shell {
   async execute(commandLine: string): Promise<string> {
     if (!this.isReady) await this.init();
     
-    const pipeline = parsePipeline(commandLine);
+    // Check for background execution (&)
+    const isBackground = commandLine.trim().endsWith('&');
+    const cleanCommandLine = isBackground ? commandLine.replace(/&$/, '').trim() : commandLine;
+
+    const pipeline = parsePipeline(cleanCommandLine);
     let lastOutput = "";
+
+    // If background, spawn process and return immediately
+    if (isBackground) {
+      const cmdName = pipeline[0]?.args[0] || "unknown";
+      const proc = processManager.spawn(this.env.USER, cmdName, true);
+      return `[1] ${proc.pid}`;
+    }
 
     for (let i = 0; i < pipeline.length; i++) {
       const segment = pipeline[i];
@@ -312,8 +324,29 @@ Commands:
               }
             }
             break;
+          case "ps":
+            const processes = processManager.list();
+            const psHeader = "PID   USER     %CPU %MEM TIME  COMMAND";
+            const psRows = processes.map(p => {
+              return `${p.pid.toString().padEnd(5)} ${p.user.padEnd(8)} ${p.cpu.toFixed(1).padEnd(4)} ${p.mem.toFixed(1).padEnd(4)} ${p.time.padEnd(5)} ${p.command}`;
+            });
+            output = [psHeader, ...psRows].join('\n');
+            break;
+          case "kill":
+            if (!args[1]) throw new Error("kill: usage: kill <pid>");
+            const pid = parseInt(args[1]);
+            if (isNaN(pid)) throw new Error(`kill: illegal pid: ${args[1]}`);
+            const success = processManager.kill(pid);
+            if (!success) throw new Error(`kill: (${pid}) - No such process`);
+            break;
+          case "top":
+            // Top is handled by the UI component when it sees this command
+            // But we need to return something or handle it here?
+            // We'll return a special string that TerminalComponent detects
+            output = "__TOP_MODE__"; 
+            break;
           case "help":
-            output = "Available commands: ls, cd, pwd, mkdir, touch, rm, cp, mv, cat, echo, grep, find, chmod, whoami, sudo, git, clear, help, curl, nano, npm, node, docker\nRedirection: > (write), >> (append)\nPipes: | (chain commands)";
+            output = "Available commands: ls, cd, pwd, mkdir, touch, rm, cp, mv, cat, echo, grep, find, chmod, whoami, sudo, git, clear, help, curl, nano, npm, node, docker, ps, kill, top\nRedirection: > (write), >> (append)\nPipes: | (chain commands)\nBackground: & (run in background)";
             break;
           default:
             throw new Error(`command not found: ${cmd}`);
@@ -354,6 +387,6 @@ Commands:
     if (!this.isReady) await this.init();
     const cwd = await this.vfs.pwd();
     const displayCwd = cwd.replace(this.env.HOME, "~");
-    return `\x1b[1;32m${this.env.USER}@learn-cli\x1b[0m:\x1b[1;34m${displayCwd}\x1b[0m$ `;
+    return `\x1b[1;32m➜\x1b[0m \x1b[1;34m${displayCwd}\x1b[0m $ `;
   }
 }

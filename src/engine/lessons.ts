@@ -1110,5 +1110,42 @@ export const lessons: Lesson[] = [
         verify: async (vfs, cmd) => cmd.includes('docker') && cmd.includes('stop')
       }
     ]
+  },
+  {
+    id: 'process-management',
+    title: 'Quản Lý Tiến Trình',
+    description: 'Hiểu cách hệ điều hành quản lý các chương trình đang chạy (processes).',
+    tasks: [
+      {
+        id: 'create-server-file',
+        description: 'Tạo một file server giả lập. Dùng lệnh: echo \'console.log("Server running...")\' > server.js',
+        commandHint: 'echo \'console.log("Server running...")\' > server.js',
+        verify: async (vfs, cmd) => (await vfs.exists('server.js'))
+      },
+      {
+        id: 'run-background',
+        description: 'Chạy file server.js dưới nền (background) bằng cách thêm dấu & vào cuối lệnh.',
+        commandHint: 'node server.js &',
+        verify: async (vfs, cmd) => cmd.includes('node') && cmd.includes('&')
+      },
+      {
+        id: 'check-process',
+        description: 'Kiểm tra danh sách các tiến trình đang chạy để tìm PID của server.js.',
+        commandHint: 'ps',
+        verify: async (vfs, cmd) => cmd.trim() === 'ps'
+      },
+      {
+        id: 'monitor-top',
+        description: 'Mở giao diện theo dõi tài nguyên hệ thống (RAM/CPU). Nhấn "q" để thoát.',
+        commandHint: 'top',
+        verify: async (vfs, cmd) => cmd.trim() === 'top'
+      },
+      {
+        id: 'kill-process',
+        description: 'Dùng lệnh kill để dừng tiến trình server.js. Thay <PID> bằng số PID bạn thấy ở lệnh ps.',
+        commandHint: 'kill <PID>',
+        verify: async (vfs, cmd) => cmd.includes('kill')
+      }
+    ]
   }
 ];
