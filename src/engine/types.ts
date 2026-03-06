@@ -11,5 +11,6 @@ export interface Lesson {
   id: string;
   title: string;
   description: string;
+  theory?: string; // Markdown content explaining the concepts
   tasks: Task[];
 }

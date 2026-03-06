@@ -86,6 +86,11 @@ export class DockerEngine {
     const containerId = Math.random().toString(16).substring(2, 14);
     const name = flags.name || `${repo}_${Math.floor(Math.random() * 1000)}`;
     
+    // Check if name conflict
+    if (this.containers.some(c => c.names === name)) {
+      throw new Error(`docker: Error response from daemon: Conflict. The container name "/${name}" is already in use`);
+    }
+
     const container: DockerContainer = {
       containerId,
       image: `${repo}:${tag}`,
@@ -105,12 +110,17 @@ export class DockerEngine {
     }
 
     // If attached, simulate output based on image
-    output += this.getContainerOutput(repo);
+    const containerOutput = this.getContainerOutput(repo);
+    output += containerOutput;
     
     // For non-service containers (like hello-world), they exit immediately
     if (repo === 'hello-world' || repo === 'ubuntu' || repo === 'alpine') {
       container.status = 'Exited';
       container.statusText = 'Exited (0) Less than a second ago';
+    } else {
+      if (!containerOutput) {
+         output += `[${repo}] Container started. Press Ctrl+C to stop (simulated).\n`;
+      }
     }
 
     return output;
@@ -128,11 +138,21 @@ export class DockerEngine {
 
   listContainers(all: boolean = false): string {
     const header = "CONTAINER ID   IMAGE          COMMAND                  CREATED          STATUS                        PORTS     NAMES";
+    
+    if (this.containers.length === 0) {
+       return header;
+    }
+
     const rows = this.containers
       .filter(c => all || c.status === 'Up')
       .map(c => {
-        const created = "Less than a second ago"; // Simplified
-        return `${c.containerId.padEnd(15)}${c.image.padEnd(15)}${c.command.substring(0, 20).padEnd(25)}${created.padEnd(17)}${c.statusText.padEnd(30)}${c.ports.padEnd(10)}${c.names}`;
+        const now = Date.now();
+        const diff = Math.floor((now - c.created) / 1000);
+        let createdStr = "Less than a second ago";
+        if (diff > 60) createdStr = `${Math.floor(diff / 60)} minutes ago`;
+        else if (diff > 0) createdStr = `${diff} seconds ago`;
+
+        return `${c.containerId.substring(0, 12).padEnd(15)} ${c.image.padEnd(15)} ${c.command.substring(0, 20).padEnd(25)} ${createdStr.padEnd(17)} ${c.statusText.padEnd(30)} ${c.ports.padEnd(10)} ${c.names}`;
       });
     return [header, ...rows].join('\n');
   }

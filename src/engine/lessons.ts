@@ -5,7 +5,24 @@ export const lessons: Lesson[] = [
   {
     id: 'basic-training',
     title: 'Khóa Huấn Luyện Cơ Bản',
-    description: 'Bài tập tổng hợp giúp bạn làm quen với các thao tác cốt lõi nhất trong môi trường dòng lệnh (CLI). Hoàn thành tuần tự các bước dưới đây.',
+    description: 'Bài tập tổng hợp giúp bạn làm quen với các thao tác cốt lõi nhất trong môi trường dòng lệnh (CLI).',
+    theory: `
+### Chào mừng đến với Command Line Interface (CLI)!
+
+CLI là nơi bạn ra lệnh cho máy tính bằng văn bản thay vì chuột.
+Các khái niệm cơ bản:
+- **Thư mục (Directory):** Giống như Folder trong Windows/macOS.
+- **Đường dẫn (Path):** Địa chỉ của tệp tin (ví dụ: \`/home/user/docs\`).
+- **Lệnh (Command):** Từ khóa để thực hiện hành động (ví dụ: \`ls\` để liệt kê).
+
+**Các lệnh sẽ học:**
+- \`pwd\` (Print Working Directory): Bạn đang ở đâu?
+- \`ls\` (List): Có gì ở đây?
+- \`cd\` (Change Directory): Đi đến nơi khác.
+- \`mkdir\` (Make Directory): Tạo thư mục mới.
+- \`touch\`: Tạo tệp tin rỗng.
+- \`rm\` (Remove): Xóa tệp tin (cẩn thận!).
+    `,
     tasks: [
       {
         id: 'pwd-1',
@@ -96,6 +113,20 @@ export const lessons: Lesson[] = [
     id: 'intermediate-training',
     title: 'Thao Tác Trung Bình',
     description: 'Học cách sao chép (cp), di chuyển/đổi tên (mv), nối thêm dữ liệu (>>) và quản lý cấu trúc thư mục.',
+    theory: `
+### Quản lý Tệp Tin Nâng Cao
+
+Khi đã quen với việc tạo và xóa, bạn cần học cách di chuyển và sao chép dữ liệu.
+
+**Các lệnh quan trọng:**
+- \`cp\` (Copy): Tạo bản sao của tệp tin. Cần chỉ định nguồn và đích.
+  - Ví dụ: \`cp file.txt backup.txt\`
+- \`mv\` (Move): Di chuyển tệp tin. Lệnh này cũng dùng để **Đổi tên (Rename)**.
+  - Di chuyển: \`mv file.txt folder/\`
+  - Đổi tên: \`mv old.txt new.txt\`
+- \`>\` (Redirect Output): Ghi đè kết quả của lệnh vào tệp tin.
+- \`>>\` (Append Output): Nối thêm kết quả vào cuối tệp tin (không xóa nội dung cũ).
+    `,
     tasks: [
       {
         id: 'cd-home',
@@ -201,6 +232,19 @@ export const lessons: Lesson[] = [
     id: 'advanced-training',
     title: 'Thao Tác Nâng Cao',
     description: 'Xây dựng cấu trúc dự án phức tạp, thao tác với đường dẫn tương đối và quản lý tệp tin hàng loạt.',
+    theory: `
+### Cấu Trúc Dự Án Thực Tế
+
+Trong các dự án phần mềm, tệp tin thường được tổ chức theo cấu trúc chuẩn:
+- \`src/\` (Source): Chứa mã nguồn gốc.
+- \`dist/\` (Distribution) hoặc \`build/\`: Chứa mã đã biên dịch để chạy.
+- \`docs/\`: Tài liệu hướng dẫn.
+
+**Kỹ năng cần có:**
+- **Đường dẫn tương đối (Relative Path):** \`./\` (hiện tại), \`../\` (cha).
+- **Thao tác hàng loạt:** Sao chép/Di chuyển nhiều tệp cùng lúc.
+- **Tư duy tổ chức:** Sắp xếp tệp tin gọn gàng, dễ tìm kiếm.
+    `,
     tasks: [
       {
         id: 'cd-home-adv',
@@ -314,6 +358,19 @@ export const lessons: Lesson[] = [
     id: 'search-filter-training',
     title: 'Tìm Kiếm & Lọc Dữ Liệu',
     description: 'Làm quen với các công cụ tìm kiếm mạnh mẽ (grep, find) và kỹ thuật đường ống (pipe) để xử lý dữ liệu.',
+    theory: `
+### Sức Mạnh Của Tìm Kiếm
+
+Khi làm việc với hàng ngàn tệp tin hoặc log dài vô tận, bạn không thể đọc bằng mắt.
+
+**Công cụ:**
+- \`grep\` (Global Regular Expression Print): Tìm kiếm nội dung **bên trong** tệp tin.
+  - Ví dụ: \`grep "Error" app.log\`
+- \`find\`: Tìm kiếm **tên tệp tin** trong hệ thống.
+  - Ví dụ: \`find . -name "*.log"\`
+- \`|\` (Pipe): Chuyển kết quả của lệnh trước làm đầu vào cho lệnh sau.
+  - Ví dụ: \`cat log.txt | grep "Error"\` (Đọc file -> Lọc lấy dòng lỗi).
+    `,
     tasks: [
       {
         id: 'mkdir-logs',
@@ -383,6 +440,24 @@ export const lessons: Lesson[] = [
     id: 'permissions-system-training',
     title: 'Quyền Hạn & Hệ Thống',
     description: 'Hiểu về quyền truy cập tệp tin (chmod), người dùng (whoami) và quản trị hệ thống cơ bản.',
+    theory: `
+### Ai Được Phép Làm Gì?
+
+Linux/Unix bảo mật bằng hệ thống quyền hạn (Permissions) chặt chẽ.
+Mỗi tệp tin có 3 nhóm quyền:
+1. **Owner (u):** Người tạo ra tệp.
+2. **Group (g):** Nhóm người dùng chung.
+3. **Others (o):** Những người còn lại.
+
+**Các quyền:**
+- **r (Read - 4):** Đọc nội dung.
+- **w (Write - 2):** Sửa/Xóa nội dung.
+- **x (Execute - 1):** Chạy chương trình/script.
+
+**Lệnh:**
+- \`chmod +x script.sh\`: Thêm quyền chạy.
+- \`chmod 755\`: rwxr-xr-x (Owner full, người khác chỉ đọc/chạy).
+    `,
     tasks: [
       {
         id: 'whoami-check',
@@ -431,6 +506,21 @@ export const lessons: Lesson[] = [
     id: 'git-basics',
     title: 'Git Cơ Bản',
     description: 'Làm quen với hệ thống quản lý phiên bản Git: init, status, add, commit và log.',
+    theory: `
+### Cỗ Máy Thời Gian Cho Code
+
+Git giúp bạn lưu lại lịch sử thay đổi của dự án, giống như Checkpoint trong game.
+
+**Quy trình cơ bản:**
+1. **Working Directory:** Nơi bạn đang sửa code.
+2. **Staging Area (\`git add\`):** Chọn những file muốn lưu.
+3. **Repository (\`git commit\`):** Chụp ảnh (Snapshot) và lưu vĩnh viễn.
+
+**Lệnh:**
+- \`git init\`: Bắt đầu theo dõi thư mục này.
+- \`git status\`: Tình hình thế nào rồi?
+- \`git log\`: Xem lại lịch sử.
+    `,
     tasks: [
       {
         id: 'git-init',
@@ -512,6 +602,18 @@ export const lessons: Lesson[] = [
     id: 'git-advanced',
     title: 'Git Nâng Cao',
     description: 'Học cách làm việc với nhánh (branch), chuyển đổi (checkout) và hợp nhất (merge) mã nguồn.',
+    theory: `
+### Đa Vũ Trụ (Branches)
+
+Git cho phép bạn tạo ra các phiên bản song song của dự án (Branches).
+- **main/master:** Nhánh chính, ổn định.
+- **feature:** Nhánh để thử nghiệm tính năng mới.
+
+**Lệnh:**
+- \`git branch\`: Xem/Tạo nhánh.
+- \`git checkout\`: Chuyển sang nhánh khác.
+- \`git merge\`: Gộp nhánh phụ vào nhánh chính.
+    `,
     tasks: [
       {
         id: 'git-init-adv',
@@ -666,6 +768,170 @@ export const lessons: Lesson[] = [
         verify: async (vfs, cmd) => {
            try { return (await vfs.cat('main.txt')).includes('Version 2'); } catch { return false; }
         }
+      }
+    ]
+  },
+  {
+    id: 'io-redirection-pipelines',
+    title: 'I/O Redirection & Pipelines',
+    description: 'Học cách điều hướng dữ liệu giữa các lệnh và tệp tin bằng Redirection (>, >>) và Pipelines (|).',
+    theory: `
+### Dòng Chảy Dữ Liệu (Streams)
+
+Mọi chương trình Linux đều có 3 cổng giao tiếp:
+1. **Stdin (0):** Đầu vào (bàn phím).
+2. **Stdout (1):** Đầu ra (màn hình).
+3. **Stderr (2):** Lỗi (màn hình).
+
+**Redirection:** Thay đổi nơi dữ liệu đi đến.
+- \`>\`: Ghi đè Stdout vào file.
+- \`>>\`: Nối thêm Stdout vào file.
+- \`|\` (Pipe): Nối Stdout của lệnh trước vào Stdin của lệnh sau.
+    `,
+    tasks: [
+      {
+        id: 'redirect-write',
+        description: 'Sử dụng > để ghi kết quả của lệnh echo vào tệp "fruits.txt".',
+        commandHint: 'echo "apple" > fruits.txt',
+        verify: async (vfs, cmd) => {
+          try {
+            const content = await vfs.cat('fruits.txt');
+            return content.trim() === 'apple';
+          } catch { return false; }
+        }
+      },
+      {
+        id: 'redirect-append',
+        description: 'Sử dụng >> để nối thêm "banana" vào cuối tệp "fruits.txt" mà không ghi đè.',
+        commandHint: 'echo "banana" >> fruits.txt',
+        verify: async (vfs, cmd) => {
+          try {
+            const content = await vfs.cat('fruits.txt');
+            return content.includes('apple') && content.includes('banana');
+          } catch { return false; }
+        }
+      },
+      {
+        id: 'cat-sort',
+        description: 'Sử dụng pipe (|) để đọc tệp fruits.txt và sắp xếp nội dung theo thứ tự bảng chữ cái.',
+        commandHint: 'cat fruits.txt | sort',
+        verify: async (vfs, cmd) => cmd.includes('|') && cmd.includes('sort')
+      },
+      {
+        id: 'uniq-count',
+        description: 'Thêm một dòng "apple" nữa, sau đó dùng pipe kết hợp sort, uniq và wc để đếm số dòng duy nhất.',
+        commandHint: 'echo "apple" >> fruits.txt && cat fruits.txt | sort | uniq | wc',
+        verify: async (vfs, cmd) => {
+           // Check if fruits.txt has duplicate apple first? 
+           // Or just check command structure
+           return cmd.includes('|') && cmd.includes('uniq') && cmd.includes('wc');
+        }
+      },
+      {
+        id: 'head-tail',
+        description: 'Sử dụng head để xem 1 dòng đầu tiên của tệp fruits.txt.',
+        commandHint: 'head -n 1 fruits.txt',
+        verify: async (vfs, cmd) => cmd.startsWith('head')
+      }
+    ]
+  },
+  {
+    id: 'network-basics',
+    title: 'Mạng & Kết Nối (Network)',
+    description: 'Sử dụng curl để tương tác với các dịch vụ mạng và API giả lập.',
+    theory: `
+### Giao Tiếp Qua Mạng (HTTP)
+
+Khi bạn gõ địa chỉ web, trình duyệt gửi một **Request** và nhận về **Response**.
+CLI dùng \`curl\` để làm điều tương tự.
+
+**Các phương thức (Methods):**
+- **GET:** Lấy dữ liệu (mặc định).
+- **POST:** Gửi dữ liệu mới lên server.
+- **HEAD:** Chỉ lấy thông tin headers (không tải nội dung).
+
+**JSON:** Định dạng dữ liệu phổ biến nhất trên web (giống Object trong JS).
+    `,
+    tasks: [
+      {
+        id: 'curl-get',
+        description: 'Gửi một yêu cầu GET đơn giản đến google.com.',
+        commandHint: 'curl google.com',
+        verify: async (vfs, cmd) => cmd.startsWith('curl') && cmd.includes('google.com')
+      },
+      {
+        id: 'curl-api',
+        description: 'Lấy danh sách người dùng từ API giả lập bằng phương thức GET.',
+        commandHint: 'curl https://api.hintshell.com/users',
+        verify: async (vfs, cmd) => cmd.includes('api.hintshell.com/users')
+      },
+      {
+        id: 'curl-head',
+        description: 'Chỉ kiểm tra headers của phản hồi (không lấy nội dung) bằng cờ -I.',
+        commandHint: 'curl -I google.com',
+        verify: async (vfs, cmd) => cmd.includes('-I') || cmd.includes('--head')
+      },
+      {
+        id: 'curl-post',
+        description: 'Gửi dữ liệu JSON lên server bằng phương thức POST.',
+        commandHint: 'curl -X POST -d \'{"name":"Dave"}\' https://api.hintshell.com/users',
+        verify: async (vfs, cmd) => (cmd.includes('-X POST') || cmd.includes('-d')) && cmd.includes('api.hintshell.com/users')
+      }
+    ]
+  },
+  {
+    id: 'docker-basics',
+    title: 'Docker Cơ Bản',
+    description: 'Làm quen với Containerization: chạy, quản lý và dừng các container Docker.',
+    theory: `
+### Containerization (Đóng Gói)
+
+Docker giúp bạn đóng gói ứng dụng và mọi thứ nó cần (code, thư viện, OS) vào một **Container**.
+Khác với Máy Ảo (VM), Container nhẹ hơn nhiều vì dùng chung nhân (kernel) của máy chủ.
+
+**Khái niệm:**
+- **Image:** Bản thiết kế (Blueprint/Template).
+- **Container:** Một phiên bản đang chạy của Image.
+
+**Vòng đời:**
+\`run\` (Tạo & Chạy) -> \`stop\` (Dừng) -> \`rm\` (Xóa).
+    `,
+    tasks: [
+      {
+        id: 'docker-run-hello',
+        description: 'Chạy container "hello-world" để kiểm tra cài đặt Docker.',
+        commandHint: 'docker run hello-world',
+        verify: async (vfs, cmd) => cmd.trim() === 'docker run hello-world'
+      },
+      {
+        id: 'docker-ps-all',
+        description: 'Liệt kê tất cả các container (bao gồm cả những cái đã dừng) để thấy hello-world.',
+        commandHint: 'docker ps -a',
+        verify: async (vfs, cmd) => cmd.includes('docker ps') && cmd.includes('-a')
+      },
+      {
+        id: 'docker-run-detached',
+        description: 'Chạy một Nginx server dưới nền (detached mode) và đặt tên là "my-web".',
+        commandHint: 'docker run -d --name my-web nginx',
+        verify: async (vfs, cmd) => cmd.includes('docker run') && cmd.includes('-d') && cmd.includes('nginx')
+      },
+      {
+        id: 'docker-ps',
+        description: 'Kiểm tra các container đang chạy.',
+        commandHint: 'docker ps',
+        verify: async (vfs, cmd) => cmd.trim() === 'docker ps'
+      },
+      {
+        id: 'docker-stop',
+        description: 'Dừng container "my-web" đang chạy.',
+        commandHint: 'docker stop my-web',
+        verify: async (vfs, cmd) => cmd.startsWith('docker stop')
+      },
+      {
+        id: 'docker-rm',
+        description: 'Xóa container "my-web" để dọn dẹp.',
+        commandHint: 'docker rm my-web',
+        verify: async (vfs, cmd) => cmd.startsWith('docker rm')
       }
     ]
   },
@@ -1043,78 +1309,22 @@ export const lessons: Lesson[] = [
       }
     ]
   },
-  {
-    id: 'network-api',
-    title: 'Mạng & API (cURL)',
-    description: 'Học cách tương tác với các API và dịch vụ mạng bằng lệnh curl.',
-    tasks: [
-      {
-        id: 'curl-get',
-        description: 'Gửi một yêu cầu GET đơn giản đến https://api.hintshell.com/users để lấy danh sách người dùng.',
-        commandHint: 'curl https://api.hintshell.com/users',
-        verify: async (vfs, cmd) => cmd.includes('curl') && cmd.includes('/users')
-      },
-      {
-        id: 'curl-post',
-        description: 'Tạo một người dùng mới bằng phương thức POST. Sử dụng flag -d để gửi dữ liệu JSON.',
-        commandHint: 'curl -X POST -d \'{"name": "Dave"}\' https://api.hintshell.com/users',
-        verify: async (vfs, cmd) => cmd.includes('curl') && cmd.includes('POST') && cmd.includes('-d')
-      },
-      {
-        id: 'curl-head',
-        description: 'Chỉ kiểm tra headers của phản hồi từ google.com (sử dụng flag -I).',
-        commandHint: 'curl -I https://google.com',
-        verify: async (vfs, cmd) => cmd.includes('curl') && (cmd.includes('-I') || cmd.includes('--head'))
-      },
-      {
-        id: 'curl-save',
-        description: 'Lưu kết quả từ API vào một file tên là users.json.',
-        commandHint: 'curl https://api.hintshell.com/users > users.json',
-        verify: async (vfs, cmd) => cmd.includes('curl') && cmd.includes('>') && cmd.includes('users.json')
-      }
-    ]
-  },
-  {
-    id: 'docker-basics',
-    title: 'Docker (Containerization)',
-    description: 'Làm quen với Docker, công nghệ container phổ biến nhất hiện nay.',
-    tasks: [
-      {
-        id: 'docker-run-hello',
-        description: 'Chạy container đầu tiên của bạn với image "hello-world". Docker sẽ tự động tải image về nếu chưa có.',
-        commandHint: 'docker run hello-world',
-        verify: async (vfs, cmd) => cmd.includes('docker') && cmd.includes('run') && cmd.includes('hello-world')
-      },
-      {
-        id: 'docker-images',
-        description: 'Kiểm tra danh sách các image đã được tải về máy.',
-        commandHint: 'docker images',
-        verify: async (vfs, cmd) => cmd.trim() === 'docker images'
-      },
-      {
-        id: 'docker-run-detached',
-        description: 'Chạy một container Nginx ở chế độ nền (detached mode) với flag -d.',
-        commandHint: 'docker run -d nginx',
-        verify: async (vfs, cmd) => cmd.includes('docker') && cmd.includes('run') && cmd.includes('-d') && cmd.includes('nginx')
-      },
-      {
-        id: 'docker-ps',
-        description: 'Xem danh sách các container đang chạy.',
-        commandHint: 'docker ps',
-        verify: async (vfs, cmd) => cmd.trim() === 'docker ps'
-      },
-      {
-        id: 'docker-stop',
-        description: 'Dừng container Nginx đang chạy. (Sử dụng ID hoặc tên container từ lệnh docker ps)',
-        commandHint: 'docker stop <container_id>',
-        verify: async (vfs, cmd) => cmd.includes('docker') && cmd.includes('stop')
-      }
-    ]
-  },
+
   {
     id: 'process-management',
     title: 'Quản Lý Tiến Trình',
     description: 'Hiểu cách hệ điều hành quản lý các chương trình đang chạy (processes).',
+    theory: `
+### Bộ Não Của Hệ Điều Hành
+
+Mỗi chương trình đang chạy được gọi là một **Tiến Trình (Process)**.
+Hệ điều hành cấp cho mỗi tiến trình một ID duy nhất (**PID**).
+
+**Quản lý:**
+- **Foreground:** Chạy trực tiếp, chiếm dụng terminal.
+- **Background (&):** Chạy ngầm, trả lại terminal cho bạn dùng việc khác.
+- **Kill:** Dừng cưỡng bức một tiến trình bằng PID.
+    `,
     tasks: [
       {
         id: 'create-server-file',

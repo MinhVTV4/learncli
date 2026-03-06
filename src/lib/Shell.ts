@@ -96,17 +96,150 @@ export class Shell {
             await this.vfs.mv(args[1], args[2]);
             break;
           case "cat":
-            if (!args[1]) throw new Error("missing operand");
-            output = await this.vfs.cat(args[1]);
+            if (args[1]) {
+              output = await this.vfs.cat(args[1]);
+            } else if (lastOutput) {
+              output = lastOutput;
+            } else {
+              // If no args and no input, cat waits for input (interactive). 
+              // For this shell, we'll just return empty or throw? 
+              // Standard cat without args reads from stdin.
+              output = ""; 
+            }
             break;
           case "echo":
             output = args.slice(1).join(" ");
             break;
           case "grep":
-            if (!args[1]) throw new Error("missing pattern");
             const pattern = args[1];
+            if (!pattern) throw new Error("missing pattern");
             const file = args[2];
+            // If file is provided, use it. If not, use lastOutput (stdin).
             output = await this.vfs.grep(pattern, file, lastOutput);
+            break;
+          case "wc":
+            {
+              let contentToProcess = "";
+              let filePath = args[1];
+              if (args[1] && args[1].startsWith('-')) {
+                 // handle flags like -l, -w, -c later if needed
+                 // for now assume simple `wc file` or `wc` (stdin)
+                 filePath = args.find(a => !a.startsWith('-') && a !== 'wc');
+              }
+
+              if (filePath) {
+                 contentToProcess = await this.vfs.cat(filePath);
+              } else if (lastOutput) {
+                 contentToProcess = lastOutput;
+              }
+
+              if (contentToProcess) {
+                 const lines = contentToProcess.split('\n').length;
+                 const words = contentToProcess.trim().split(/\s+/).length;
+                 const bytes = contentToProcess.length;
+                 output = `      ${lines}       ${words}       ${bytes}`;
+              }
+            }
+            break;
+          case "head":
+            {
+               let count = 10;
+               let filePath = undefined;
+               
+               // Parse args: head -n 5 file or head -5 file
+               for (let k = 1; k < args.length; k++) {
+                 if (args[k] === '-n' && args[k+1]) {
+                   count = parseInt(args[k+1]);
+                   k++;
+                 } else if (args[k].startsWith('-') && !isNaN(parseInt(args[k].substring(1)))) {
+                   count = parseInt(args[k].substring(1));
+                 } else {
+                   filePath = args[k];
+                 }
+               }
+
+               let contentToProcess = "";
+               if (filePath) {
+                 contentToProcess = await this.vfs.cat(filePath);
+               } else {
+                 contentToProcess = lastOutput;
+               }
+
+               const lines = contentToProcess.split('\n');
+               output = lines.slice(0, count).join('\n');
+            }
+            break;
+          case "tail":
+            {
+               let count = 10;
+               let filePath = undefined;
+               
+               for (let k = 1; k < args.length; k++) {
+                 if (args[k] === '-n' && args[k+1]) {
+                   count = parseInt(args[k+1]);
+                   k++;
+                 } else if (args[k].startsWith('-') && !isNaN(parseInt(args[k].substring(1)))) {
+                   count = parseInt(args[k].substring(1));
+                 } else {
+                   filePath = args[k];
+                 }
+               }
+
+               let contentToProcess = "";
+               if (filePath) {
+                 contentToProcess = await this.vfs.cat(filePath);
+               } else {
+                 contentToProcess = lastOutput;
+               }
+
+               const lines = contentToProcess.split('\n');
+               output = lines.slice(-count).join('\n');
+            }
+            break;
+          case "sort":
+            {
+               let filePath = args[1];
+               let reverse = false;
+               if (args.includes('-r')) {
+                 reverse = true;
+                 filePath = args.find(a => a !== '-r' && a !== 'sort');
+               }
+
+               let contentToProcess = "";
+               if (filePath) {
+                 contentToProcess = await this.vfs.cat(filePath);
+               } else {
+                 contentToProcess = lastOutput;
+               }
+
+               const lines = contentToProcess.split('\n');
+               lines.sort();
+               if (reverse) lines.reverse();
+               output = lines.join('\n');
+            }
+            break;
+          case "uniq":
+            {
+               let filePath = args[1];
+               let contentToProcess = "";
+               if (filePath) {
+                 contentToProcess = await this.vfs.cat(filePath);
+               } else {
+                 contentToProcess = lastOutput;
+               }
+
+               const lines = contentToProcess.split('\n');
+               const uniqueLines: string[] = [];
+               if (lines.length > 0) {
+                 uniqueLines.push(lines[0]);
+                 for (let k = 1; k < lines.length; k++) {
+                   if (lines[k] !== lines[k-1]) {
+                     uniqueLines.push(lines[k]);
+                   }
+                 }
+               }
+               output = uniqueLines.join('\n');
+            }
             break;
           case "find":
             let startPath = args[1] || '.';
@@ -343,7 +476,7 @@ Commands:
             output = "__TOP_MODE__"; 
             break;
           case "help":
-            output = "Available commands: ls, cd, pwd, mkdir, touch, rm, cp, mv, cat, echo, grep, find, chmod, whoami, sudo, git, clear, help, curl, nano, npm, node, docker, ps, kill, top\nRedirection: > (write), >> (append)\nPipes: | (chain commands)\nBackground: & (run in background)";
+            output = "Available commands: ls, cd, pwd, mkdir, touch, rm, cp, mv, cat, echo, grep, find, chmod, whoami, sudo, git, clear, help, curl, nano, npm, node, docker, ps, kill, top, wc, head, tail, sort, uniq\nRedirection: > (write), >> (append)\nPipes: | (chain commands)\nBackground: & (run in background)";
             break;
           default:
             throw new Error(`command not found: ${cmd}`);
