@@ -5,6 +5,7 @@ import { NPMService } from "../services/npm";
 import { network } from "./Network";
 import { DockerEngine } from "./Docker";
 import { processManager } from "./ProcessManager";
+import { NodeRuntime } from "./NodeRuntime";
 
 export class Shell {
   vfs: VFSCommands;
@@ -12,11 +13,13 @@ export class Shell {
   isReady: boolean = false;
   private npmService: NPMService;
   private docker: DockerEngine;
+  private nodeRuntime: NodeRuntime;
 
   constructor() {
     this.vfs = new VFSCommands();
     this.npmService = new NPMService(this.vfs);
     this.docker = new DockerEngine();
+    this.nodeRuntime = new NodeRuntime(this.vfs);
     this.env = {
       USER: "user",
       HOME: "/home/user",
@@ -137,23 +140,17 @@ export class Shell {
             break;
           case "node":
             if (args.length === 1) {
-              output = "Welcome to Node.js v14.17.0.\nType \".help\" for more information.";
+              output = "Welcome to Node.js v18.0.0.\nType \".help\" for more information.\n(REPL not fully supported yet, use 'node <file>')";
             } else if (args[1] === '-v' || args[1] === '--version') {
-              output = "v14.17.0";
+              output = "v18.0.0";
+            } else if (args[1] === '-e' || args[1] === '--eval') {
+              const code = args.slice(2).join(" ").replace(/^['"]|['"]$/g, ""); // Remove quotes
+              output = await this.nodeRuntime.evaluate(code, this.env);
             } else {
               const file = args[1];
               try {
                 const content = await this.vfs.cat(file);
-                if (content.includes('console.log')) {
-                  const match = content.match(/console\.log\(['"](.*)['"]\)/);
-                  if (match) {
-                    output = match[1];
-                  } else {
-                    output = `[Node.js] Executed ${file}`;
-                  }
-                } else {
-                  output = `[Node.js] Executed ${file}`;
-                }
+                output = await this.nodeRuntime.evaluate(content, this.env);
               } catch (e) {
                 throw new Error(`Cannot find module '${file}'`);
               }

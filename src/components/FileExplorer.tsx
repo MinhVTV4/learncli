@@ -71,7 +71,7 @@ export function FileExplorer({ refreshTrigger }: { refreshTrigger: number }) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#1e1e1e] rounded-lg overflow-hidden border border-white/10 shadow-2xl">
+    <div className="h-full flex flex-col bg-[#1e1e1e]">
       <div className="flex items-center px-4 py-2 bg-[#2d2d2d] border-b border-white/5">
         <div className="text-xs text-gray-400 font-mono flex items-center">
           <HardDrive size={14} className="mr-2" />

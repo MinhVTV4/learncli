@@ -43,6 +43,35 @@ export class GitService {
     return null;
   }
 
+  // Helper to find all git repos in the VFS (for UI visualization)
+  async findAllRepos(): Promise<{ id: string, path: string }[]> {
+    const repos: { id: string, path: string }[] = [];
+    const nodes = await vfsCore.getChildren('root'); // Start from root? Or scan all nodes?
+    // Scanning all nodes for .git is expensive but accurate in IDB
+    // Let's just scan for directories named .git
+    // Actually, we can query DB directly if we had access, but via vfsCore is cleaner abstraction.
+    // But vfsCore doesn't expose "find by name globally".
+    // Let's assume typical structure: /home/user/repo/.git
+    // We can just walk from root.
+    
+    const queue = [{ id: 'root', path: '/' }];
+    while (queue.length > 0) {
+      const { id, path } = queue.shift()!;
+      const children = await vfsCore.getChildren(id);
+      
+      for (const child of children) {
+        if (child.type === 'directory') {
+          if (child.name === '.git') {
+            repos.push({ id: id, path: path }); // id is parent of .git
+          } else {
+            queue.push({ id: child.id, path: path === '/' ? `/${child.name}` : `${path}/${child.name}` });
+          }
+        }
+      }
+    }
+    return repos;
+  }
+
   async getGitState(repoRootId: string): Promise<GitState> {
     const gitDir = await vfsCore.getChildByName(repoRootId, '.git');
     if (!gitDir) throw new Error('Not a git repository');

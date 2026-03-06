@@ -65,16 +65,24 @@ const AVAILABLE_COMMANDS = [
 export function TerminalComponent({ 
   onCommandExecuted,
   onCommandParsed,
-  currentTask
+  currentTask,
+  onShellReady
 }: { 
   onCommandExecuted?: () => void;
   onCommandParsed?: (cmd: string, vfs: any) => void;
   currentTask?: { commandHint: string; description: string };
+  onShellReady?: (shell: Shell) => void;
 }) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const shellRef = useRef<Shell>(new Shell());
+
+  useEffect(() => {
+    if (onShellReady && shellRef.current) {
+      onShellReady(shellRef.current);
+    }
+  }, [onShellReady]);
 
   const [input, setInput] = useState("");
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
@@ -302,6 +310,10 @@ export function TerminalComponent({
                 });
                 setHistory((prev) => [...prev, cmd]);
                 
+                // Trigger lesson verification for nano
+                if (onCommandExecuted) onCommandExecuted();
+                if (onCommandParsed) onCommandParsed(cmd, shell.vfs);
+
                 currentLineRef.current = "";
                 setInput("");
                 setShowSuggestions(false);
@@ -315,6 +327,11 @@ export function TerminalComponent({
               const output = await shell.execute(cmd);
               if (output === "__TOP_MODE__") {
                 setIsTopOpen(true);
+                
+                // Trigger lesson verification for top
+                if (onCommandExecuted) onCommandExecuted();
+                if (onCommandParsed) onCommandParsed(cmd, shell.vfs);
+
                 currentLineRef.current = "";
                 setInput("");
                 setShowSuggestions(false);

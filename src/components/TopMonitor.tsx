@@ -77,8 +77,11 @@ export const TopMonitor: React.FC<TopMonitorProps> = ({ onExit }) => {
         ))}
       </div>
       
-      <div className="absolute bottom-0 left-0 w-full bg-gray-800 text-black px-2">
-        Press 'q' to exit
+      <div 
+        className="absolute bottom-0 left-0 w-full bg-gray-800 text-black px-2 cursor-pointer hover:bg-gray-700 hover:text-white transition-colors flex items-center justify-center py-1"
+        onClick={onExit}
+      >
+        Press 'q' or click here to exit
       </div>
     </div>
   );
